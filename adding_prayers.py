@@ -1,10 +1,23 @@
 import requests
 import json
 import re
-# from urllib.request import urlretrieve
 from pathlib import Path
 import os
 from pydub import AudioSegment
+
+
+# Creating folders
+try:
+    os.mkdir("Prayer_Audio")
+except Exception as e:
+    # print("Directory Error: ",e)
+    pass
+
+try:
+    os.mkdir("Extracted_verses")
+except Exception as e:
+    # print("Directory Error: ",e)
+    pass
 
 
 # Converted te refrences to numbers by removing the brackets
@@ -54,18 +67,13 @@ def compile_prayer_audio(folder,id):
             audio = AudioSegment.from_mp3(path) 
             prayer += audio
         count += 1
-    with open(f"Prayer Audio/prayer_audio{id}.mp3",'wb') as prayer_audio:
+    with open(f"Prayer_Audio/prayer_audio{id}.mp3",'wb') as prayer_audio:
         prayer.export(prayer_audio,format="mp3")
+    audio_link = f'https://jibex-banks.github.io/Dua-Project/Prayer_Audio/prayer_audio{id}.mp3'
+    return audio_link
 
 
     
-# Creating folders
-try:
-    os.mkdir("Prayer Audio")
-except Exception as e:
-    # print("Directory Error: ",e)
-    pass
-
 """
 This part might be a little clumsy because we would try to read a file and still rewrite the same file. And we would also be getting the arabic text using an external API: "https://quranapi.pages.dev/api/{chapter}/{verse}.json" to get the texts and audio there would be preprocessing in the audio because we would extract, concatenate and save the file after everything before adding to our api.
 """
@@ -78,6 +86,10 @@ for i in range(len(data)):
     ref = extract_the_digits(refrence)
     chapter, verses = chapter_and_verse(ref)
     file =  open("new.json",'w')
+    try:
+        os.mkdir(f"Extracted_verses/Prayer{id}")
+    except Exception as e:
+        pass
     if chapter != "null":
         count = 0
         for verse in verses:
@@ -94,22 +106,14 @@ for i in range(len(data)):
             var = response_data["audio"]["1"]
             verse_audio_url = var["originalUrl"]
             # opening a new file for each verse and adding audio file to it
-            try:
-                os.mkdir("Extracted verses")
-            except Exception as e:
-                pass
-            with open(f"Extracted verses/verse{count}.mp3",'wb') as verse_audio_file: 
+            with open(f"Extracted_verses/Prayer{id}/verse{count}.mp3",'wb') as verse_audio_file: 
                 audio_response = requests.get(verse_audio_url,stream=True)
                 audio_response = audio_response.content
                 verse_audio_file.write(audio_response)
             count += 1
-        compile_prayer_audio("Extracted verses/",id)
+        audio_link = compile_prayer_audio(f"Extracted_verses/Prayer{id}",id)
         # Codes to run after the for loop
-        try:
-            os.rmdir("Extracted verses")
-        except Exception as e:
-            pass
-        data[i].update({"arabic":arabics})
+        data[i].update({"arabic":arabics,"audio":audio_link})
         prayer_file = open("test.json",'w')
         json.dump(data,prayer_file,indent=4)
         break
