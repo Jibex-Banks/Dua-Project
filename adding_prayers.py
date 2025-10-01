@@ -93,7 +93,7 @@ def compile_prayer_audio(folder,id):
 """
 This part might be a little clumsy because we would try to read a file and still rewrite the same file. And we would also be getting the arabic text using an external API: "https://quranapi.pages.dev/api/{chapter}/{verse}.json" to get the texts and audio there would be preprocessing in the audio because we would extract, concatenate and save the file after everything before adding to our api.
 """
-with  open("cleaned_data.json",'r',) as file:
+with  open("json/cleaned_data.json",'r',) as file:
     data = json.load(file)
 for i in range(len(data)):
     id = data[i]['id']
@@ -151,9 +151,9 @@ for i in range(len(data)):
         audio_link = compile_prayer_audio(f"Extracted_verses/Prayer{id}",id)
         # Codes to run after the for loop
         data[i].update({"arabic":arabics,"audio":audio_link})
-        prayer_file = open("dua_api.json",'w')
-        json.dump(data,prayer_file,indent=4)
+        # prayer_file = open("json/dua_api.json",'w')
+        # json.dump(data,prayer_file,indent=4)
     else:
         print("Chapter is null")
 
-prayer_file.close()
+# prayer_file.close()
