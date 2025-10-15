@@ -1,35 +1,6 @@
-from nltk.corpus import stopwords
-from sklearn.feature_extraction.text import TfidfVectorizer
-from nltk.tokenize import word_tokenize
-from sklearn.metrics.pairwise import cosine_similarity
-import nltk
-import pandas as pd
-
-
-# nltk.download('punkt')
-# nltk.download('punkt_tab')
-# nltk.download('stopwords')
-
-# def data(json_file):
-#     dua_data = {}
-#     data = pd.read_json(json_file)
-#     data = data
-#     question = data[['title']]
-#     question2 = data[['background']]
-#     answer = data[['id']]
-#     questions = question.values
-#     questions2 = question2.values
-#     answers = answer.values
-   
-#     for i in range(0,len(questions)):
-#         dua_data[questions[i][0]] = int(answers[i][0])
-#     for i in range(1,len(questions2)):
-#         dua_data[questions2[i][0]] = int(answers[i][0])
-
-#     print(dua_data)
-
-# data('json/dua_api.json')
-
+from sentence_transformers import SentenceTransformer
+import numpy as np
+import faiss
 dua_data = {
     "A Perfect and Comprehensive Prayer": 1,
     "Prayer for Affirmation of Faith and Attainment of Piety": 2,
@@ -207,36 +178,29 @@ dua_data = {
     "At the time of building the Kaâ€˜bah Hadrat Ibrahim (A.S) (Abraham) finished his prayers with this supplication.": 91
 }
 
-stopwords = set(stopwords.words("english"))
-questions = list(dua_data.keys())
+keys = [i for i in dua_data.keys()]
 
-def preprocess_text(text):
-    tokens = word_tokenize(text.lower())
-    return ' '.join([word for word in tokens if word not in stopwords]) # type: ignore
+model = SentenceTransformer("all-MiniLM-L6-v2")
+embeddings = model.encode(keys)
 
+dimension = embeddings.shape[1]
 
-preprocess_questions = [preprocess_text(question) for question in questions]
-
-vectorizer = TfidfVectorizer()
-tdif_matrix = vectorizer.fit_transform(preprocess_questions)
+embeddings =  embeddings / np.linalg.norm(embeddings, axis=1, keepdims=True)
+Index = faiss.IndexFlatIP(dimension)
+Index.add(embeddings) # type: ignore
 
 
-def ask(user_input):
-    preprocess_user_input = preprocess_text(user_input)
-    user_vector = vectorizer.transform([preprocess_user_input])
+faiss.write_index(Index,"./model/dua_model.faiss")
 
-    similarities = cosine_similarity(user_vector,tdif_matrix)
-    best_match_idx = similarities.argmax()
-    best_match_score = similarities[0,best_match_idx]
+"""
+USAGE
+def search(question,top_k=1):
+    question_embeddings = model.encode([question])
+    question_embeddings = question_embeddings / np.linalg.norm(question_embeddings,axis=1,keepdims=True)
+    distances,indices = Index.search(np.array(question_embeddings),top_k)
+    results = [(keys[i], distances[0][pos]) for pos,i in enumerate(indices[0])]
+    return results
 
-
-    if best_match_score > 0.5:
-        response = questions[best_match_idx]
-        return f'Result is {dua_data.get(response)}'
-    else:
-        return "We are sorry we couldn't find a dua for you"
-
-
-user_input = str(input("Salam Alaikum, What's the issue today? "))
-response = ask(user_input)
-print(response)
+question = input("Question: ")
+print(search(question))
+"""
