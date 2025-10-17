@@ -1,3 +1,4 @@
+from contextlib import asynccontextmanager
 from fastapi import FastAPI,HTTPException
 from pydantic import BaseModel
 from model.model2 import keys
@@ -7,7 +8,15 @@ from sentence_transformers import SentenceTransformer
 import json
 from fastapi.middleware.cors import CORSMiddleware
 
-app = FastAPI()
+model = None
+index = None
+
+@asynccontextmanager # type: ignore
+async def lifespan(app : FastAPI):
+    model = SentenceTransformer("sentence-transformers/all-MiniLM-L6-v2",cache_folder="./all-MiniLM-L6-v2")
+    index = faiss.read_index("model/dua_model.faiss")
+
+app = FastAPI(lifespan=lifespan)
 app.add_middleware(
     CORSMiddleware,
     allow_origins = ["*"],
@@ -15,9 +24,6 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers = ["*"]
 )
-
-model = SentenceTransformer("sentence-transformers/all-MiniLM-L6-v2",cache_folder="./all-MiniLM-L6-v2")
-index = faiss.read_index("model/dua_model.faiss")
 
 
 datas = []
