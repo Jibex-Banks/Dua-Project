@@ -1,20 +1,41 @@
 from fastapi import FastAPI,HTTPException
 from pydantic import BaseModel
-from model.model2 import model, keys
+from model.model2 import keys
 import faiss
 import numpy as np
+from sentence_transformers import SentenceTransformer
+import json
+from fastapi.middleware.cors import CORSMiddleware
 
 app = FastAPI()
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins = ["*"],
+    allow_credentials = True,
+    allow_methods=["*"],
+    allow_headers = ["*"]
+)
 
-
+model = SentenceTransformer("sentence-transformers/all-MiniLM-L6-v2",cache_folder="./all-MiniLM-L6-v2")
 index = faiss.read_index("model/dua_model.faiss")
 
-def get_result(question,top_k=1):
+
+datas = []
+dua_data = {}
+
+with open("json/dua_api.json","rb") as f:
+    datas = json.load(f)
+
+with open("json/data_keys.json",'rb') as ff:
+    dua_data = json.load(ff)
+
+def get_result(question,top_k=3):
     question_embeddings = model.encode([question])
     question_embeddings = question_embeddings / np.linalg.norm(question_embeddings,axis=1,keepdims=True)
     distances,indices = index.search(np.array(question_embeddings),top_k)
-    results = [(keys[i], distances[0][pos]) for pos,i in enumerate(indices[0])]
-    return results
+    results = [keys[i] for i in indices[0]]
+    response = [result for result in results]
+    return response
 
 
 class Prompt(BaseModel):
@@ -28,13 +49,17 @@ async def home():
 # http://127.0.0.1:8000/query
 @app.post("/query")
 async def query(prompt:Prompt):
+    response = []
     try:
         question = prompt.question
-        response = get_result(question)
-        return {"message":response}
+        keys = get_result(question)
+        for key in keys:
+            index = dua_data[key]
+            for data in datas:
+                if data["id"] == index:   
+                    response.append(data)
+                else:
+                    pass
+            return response
     except Exception as e:
-        raise HTTPException(status_code=404,detail="""
-                Moon as being Attacked due to this reason
-                "{e}",
-                Please resolve immediately!
-            """)
+        raise HTTPException(status_code=301,detail=f"Moon as being Attacked due to this reason <{e}>,Please resolve immediately!")
