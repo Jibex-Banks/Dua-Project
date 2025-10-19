@@ -1,3 +1,4 @@
+import torch
 from contextlib import asynccontextmanager
 from fastapi import FastAPI,HTTPException
 from pydantic import BaseModel
@@ -11,16 +12,8 @@ import uvicorn
 import os
 
 
-@asynccontextmanager # type: ignore
-async def lifespan(app : FastAPI):
-    global model,index
-    model = SentenceTransformer("sentence-transformers/all-MiniLM-L6-v2",cache_folder="./all-MiniLM-L6-v2")
-    model.to('cuda')
-    index = faiss.read_index("model/dua_model.faiss")
-    yield
 
-
-app = FastAPI(lifespan=lifespan)
+app = FastAPI()
 app.add_middleware(
     CORSMiddleware,
     allow_origins = ["*"],
@@ -50,6 +43,14 @@ def get_result(question,top_k=3):
 
 class Prompt(BaseModel):
     question : str
+
+@app.on_event("startup")
+async def startup_event():
+    global model,index
+    model = SentenceTransformer("sentence-transformers/all-MiniLM-L6-v2",cache_folder="./all-MiniLM-L6-v2")
+    model.to('cuda')
+    index = faiss.read_index("model/dua_model.faiss")
+
 
 # http://127.0.0.1:8000/
 @app.get('/')
