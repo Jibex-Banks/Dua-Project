@@ -7,6 +7,8 @@ import numpy as np
 from sentence_transformers import SentenceTransformer
 import json
 from fastapi.middleware.cors import CORSMiddleware
+import uvicorn
+import os
 
 
 @asynccontextmanager # type: ignore
@@ -14,6 +16,8 @@ async def lifespan(app : FastAPI):
     global model,index
     model = SentenceTransformer("sentence-transformers/all-MiniLM-L6-v2",cache_folder="./all-MiniLM-L6-v2")
     index = faiss.read_index("model/dua_model.faiss")
+    yield
+
 
 app = FastAPI(lifespan=lifespan)
 app.add_middleware(
@@ -68,3 +72,7 @@ async def query(prompt:Prompt):
             return response
     except Exception as e:
         raise HTTPException(status_code=301,detail=f"Moon as being Attacked due to this reason <{e}>,Please resolve immediately!")
+    
+    if __name__ == "__main__":
+        port = int(os.environ.get("PORT", 8000))
+        uvicorn.run(app, host="0.0.0.0", port=port)
