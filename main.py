@@ -43,7 +43,7 @@ async def startup_event():
     from model.model2 import keys
     global model,index,n_keys
     n_keys = keys
-    model = SentenceTransformer("sentence-transformers/all-MiniLM-L6-v2", device="cpu")
+    model = SentenceTransformer("sentence-transformers/paraphrase-MiniLM-L3-v2", device="cpu")
     index = faiss.read_index("model/dua_model.faiss")
 
 
