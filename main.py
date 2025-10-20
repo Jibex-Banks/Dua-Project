@@ -42,7 +42,7 @@ async def startup_event():
     from sentence_transformers import SentenceTransformer
     import faiss
     global model,index
-    model = SentenceTransformer("mymodel")
+    model = SentenceTransformer("sentence-transformers/all-MiniLM-L6-v2", device="cpu")
     model.to('cuda')
     index = faiss.read_index("model/dua_model.faiss")
 
