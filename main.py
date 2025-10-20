@@ -3,7 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 import uvicorn
 import json
-from .model.model2 import model, Index, keys
+from model.model2 import model, Index, keys
 import numpy as np
 
 
