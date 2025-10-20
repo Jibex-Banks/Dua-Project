@@ -1,10 +1,9 @@
 from fastapi import FastAPI,HTTPException
-from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
-import uvicorn
-import json
-from model.model2 import model, Index, keys
+from model.model2 import keys
 import numpy as np
+import json
+from fastapi.middleware.cors import CORSMiddleware
 
 
 app = FastAPI()
@@ -19,7 +18,6 @@ app.add_middleware(
 
 datas = []
 dua_data = {}
-index = Index
 
 with open("json/dua_api.json","rb") as f:
     datas = json.load(f)
@@ -39,11 +37,20 @@ def get_result(question,top_k=3):
 class Prompt(BaseModel):
     question : str
 
+@app.on_event("startup")
+async def startup_event():
+    from sentence_transformers import SentenceTransformer
+    import faiss
+    global model,index
+    model = SentenceTransformer("mymodel")
+    model.to('cuda')
+    index = faiss.read_index("model/dua_model.faiss")
+
+
 # http://127.0.0.1:8000/
 @app.get('/')
 async def home():
     return {"message":"Welcome To Moon, Technology driven by Faith"}
-
 
 # http://127.0.0.1:8000/query
 @app.post("/query")

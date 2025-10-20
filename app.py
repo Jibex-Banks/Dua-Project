@@ -1,16 +1,10 @@
-import torch
-from contextlib import asynccontextmanager
 from fastapi import FastAPI,HTTPException
-from pydantic import BaseModel
-from model.model2 import keys
-import faiss
-import numpy as np
-from sentence_transformers import SentenceTransformer
-import json
 from fastapi.middleware.cors import CORSMiddleware
+from pydantic import BaseModel
 import uvicorn
-import os
-
+import json
+from model.model2 import model, Index, keys
+import numpy as np
 
 
 app = FastAPI()
@@ -25,6 +19,7 @@ app.add_middleware(
 
 datas = []
 dua_data = {}
+index = Index
 
 with open("json/dua_api.json","rb") as f:
     datas = json.load(f)
@@ -44,18 +39,11 @@ def get_result(question,top_k=3):
 class Prompt(BaseModel):
     question : str
 
-@app.on_event("startup")
-async def startup_event():
-    global model,index
-    model = SentenceTransformer("sentence-transformers/all-MiniLM-L6-v2",cache_folder="./all-MiniLM-L6-v2")
-    model.to('cuda')
-    index = faiss.read_index("model/dua_model.faiss")
-
-
 # http://127.0.0.1:8000/
 @app.get('/')
 async def home():
     return {"message":"Welcome To Moon, Technology driven by Faith"}
+
 
 # http://127.0.0.1:8000/query
 @app.post("/query")
@@ -74,8 +62,3 @@ async def query(prompt:Prompt):
             return response
     except Exception as e:
         raise HTTPException(status_code=301,detail=f"Moon as being Attacked due to this reason <{e}>,Please resolve immediately!")
-    
-
-if __name__ == "__main__":
-    port = int(os.environ.get("PORT", 8000))
-    uvicorn.run(app, host="0.0.0.0", port=port)
