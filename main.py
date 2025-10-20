@@ -1,6 +1,5 @@
 from fastapi import FastAPI,HTTPException
 from pydantic import BaseModel
-from model.model2 import keys
 import numpy as np
 import json
 from fastapi.middleware.cors import CORSMiddleware
@@ -29,7 +28,7 @@ def get_result(question,top_k=3):
     question_embeddings = model.encode([question])
     question_embeddings = question_embeddings / np.linalg.norm(question_embeddings,axis=1,keepdims=True)
     distances,indices = index.search(np.array(question_embeddings),top_k)
-    results = [keys[i] for i in indices[0]]
+    results = [n_keys[i] for i in indices[0]]
     response = [result for result in results]
     return response
 
@@ -41,7 +40,9 @@ class Prompt(BaseModel):
 async def startup_event():
     from sentence_transformers import SentenceTransformer
     import faiss
-    global model,index
+    from model.model2 import keys
+    global model,index,n_keys
+    n_keys = keys
     model = SentenceTransformer("sentence-transformers/all-MiniLM-L6-v2", device="cpu")
     index = faiss.read_index("model/dua_model.faiss")
 
@@ -58,7 +59,7 @@ async def query(prompt:Prompt):
     try:
         question = prompt.question
         keys = get_result(question)
-        for key in keys:
+        for key in n_keys:
             index = dua_data[key]
             for data in datas:
                 if data["id"] == index:   

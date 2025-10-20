@@ -181,7 +181,6 @@ dua_data = {
 keys = [i for i in dua_data.keys()]
 
 model = SentenceTransformer("sentence-transformers/all-MiniLM-L6-v2",cache_folder="./all-MiniLM-L6-v2")
-model.save("mymodel")
 embeddings = model.encode(keys)
 
 dimension = embeddings.shape[1]
