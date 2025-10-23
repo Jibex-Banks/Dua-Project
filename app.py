@@ -30,7 +30,7 @@ with open("json/data_keys.json",'rb') as ff:
 def get_result(question,top_k=3):
     question_embeddings = model.encode([question])
     question_embeddings = question_embeddings / np.linalg.norm(question_embeddings,axis=1,keepdims=True)
-    distances,indices = index.search(np.array(question_embeddings),top_k)
+    distances,indices = index.search(np.array(question_embeddings),top_k)  #type: ignore
     results = [keys[i] for i in indices[0]]
     response = [result for result in results]
     return response
